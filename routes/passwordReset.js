@@ -1,8 +1,9 @@
 import express from 'express';
-import { emailLink } from '../controllers/pwdResetController.js';
+import { emailLink, resetPassword } from '../controllers/pwdResetController.js';
 
 const router = express.Router();
 
-router.post('/auth/resetpassword', emailLink);
+router.post('/api/auth/resetpassword', emailLink);
+router.put('/api/auth/password-reset/:token/:userId', resetPassword);
 
 export default router;

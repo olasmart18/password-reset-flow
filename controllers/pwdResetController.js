@@ -36,7 +36,7 @@ export const emailLink = async (req, res) =>{
 
                     console.log(token);
 
-                const resetLink = `${process.env.BASE_URL}/password-reset/?token=${createToken}$id=${user._id}`;
+                const resetLink = `${process.env.BASE_URL}/password-reset/${createToken}/${user._id}`;
                 console.log(resetLink);
                 await sendEmail(user.email, 'password reset', resetLink);
                 res.status(200).json({
@@ -58,5 +58,36 @@ export const emailLink = async (req, res) =>{
 
 // reset password here
 export const resetPassword = async (req, res) => {
-    
+    try {
+        // request the token and user id from the params
+        // the requested token and password should come 
+        // with the password reset link
+        const { token, userId } = req.params;
+        const user = await User.findById(userId); // find the user  reseting passord from db
+        if (!user) return res.status(404).json({
+            message: 'not a valid user'
+        });
+        // find the token associated with the userId from db
+        const findToken = await Token.findOne({
+            userId: user._id,
+            token: token
+        });
+        if (!findToken) return res.status(400).json({
+            message: 'token not valid or  expired'
+        });
+        // replace the old passord with new one 
+        const password = req.body.password;
+        const updatePwd = await User.findByIdAndUpdate({_id: userId},
+            {$set: {password: password}},
+            { new: true });
+        await updatePwd.save(); // save new data
+        await findToken.deleteOne(); // delete  token fron db
+        return res.status(200).json({
+            message: 'password changed successfully'
+        });
+    } catch (err) {
+        return res.status(500).json({
+            message: 'server error, try again'
+        })
+    }
 }
