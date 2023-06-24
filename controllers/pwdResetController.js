@@ -22,20 +22,13 @@ export const emailLink = async (req, res) =>{
                 const token = await Token.findOne({userId: user._id})
                    if(token)
                     await token.deleteOne();
-                   
-                    console.log(user._id);
                     const createToken = crypto.randomBytes(32).toString('hex');
-                    console.log(createToken);
                      // create a new token 
                    await new Token ({
                         userId: user._id,
                         token: createToken,
                         createdAt: Date.now()
                     }).save();
-                   
-
-                    console.log(token);
-
                 const resetLink = `${process.env.BASE_URL}/password-reset/${createToken}/${user._id}`;
                 console.log(resetLink);
                 await sendEmail(user.email, 'password reset', resetLink);
@@ -90,4 +83,4 @@ export const resetPassword = async (req, res) => {
             message: 'server error, try again'
         })
     }
-}
+};
