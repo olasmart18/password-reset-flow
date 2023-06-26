@@ -1,7 +1,7 @@
 import User, { validate } from '../model/user.js';
 import joi from 'joi';
 import bcrypt from 'bcrypt';
-// import jwt from 'jsonwewbtoken';
+import jwt from 'jsonwebtoken';
 
 // create new user
 export const register = async (req, res) => {
@@ -54,7 +54,16 @@ export const login = async (req, res) => {
         const correctPwd = bcrypt.compareSync(password, existUser.password);
         if (!correctPwd) return res.json({
             messgae: 'email or password not correct' });
-        res.status(200).json({
+            // sign a jwt for user login
+            const token = jwt.sign({ id: existUser._id },
+                process.env.SECRET_KEY,
+                {expiresIn: '1h'});
+            if (!token) return res.json({ message: 'error signing token'});
+        res.cookie('uuid', token,
+        { httpOnly: true,
+            secure: false,
+            expiresIn: token.expiresIn
+        }).status(200).json({
                 message: 'login successful'
             })
         
@@ -62,3 +71,8 @@ export const login = async (req, res) => {
         res.json({message: 'error, try again'});
     }
 }
+
+//  protected home route for user verification test
+export const home = async (req, res) => {
+    res.send('welcome to homepage')
+};
