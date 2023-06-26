@@ -1,5 +1,6 @@
 import joi from 'joi';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import sendEmail from '../utils/sendEmail.js';
 import User from '../model/user.js';
 import Token from '../model/token.js';
@@ -30,7 +31,6 @@ export const emailLink = async (req, res) =>{
                         createdAt: Date.now()
                     }).save();
                 const resetLink = `${process.env.BASE_URL}/password-reset/${createToken}/${user._id}`;
-                console.log(resetLink);
                 await sendEmail(user.email, 'password reset', resetLink);
                 res.status(200).json({
                     message: 'password reset link has been sent to your email',
@@ -56,7 +56,7 @@ export const resetPassword = async (req, res) => {
         // the requested token and password should come 
         // with the password reset link
         const { token, userId } = req.params;
-        const user = await User.findById(userId); // find the user  reseting passord from db
+        const user = await User.findById(userId); // find the user reseting passord from db
         if (!user) return res.status(404).json({
             message: 'not a valid user'
         });
@@ -70,8 +70,11 @@ export const resetPassword = async (req, res) => {
         });
         // replace the old passord with new one 
         const password = req.body.password;
+        // encrypted password before saving to db
+        const saltRound = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(password, saltRound);
         const updatePwd = await User.findByIdAndUpdate({_id: userId},
-            {$set: {password: password}},
+            { $set: { password: hash }},
             { new: true });
         await updatePwd.save(); // save new data
         await findToken.deleteOne(); // delete  token fron db
